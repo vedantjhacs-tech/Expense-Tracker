@@ -1,11 +1,39 @@
+
 const express = require("express");
 const pool = require("../db");
 const authenticateToken = require("../middleware/auth");
 
 const router = express.Router();
 
-// Protect all expense routes
 router.use(authenticateToken);
+
+// Validate date format and calendar date
+function isValidDate(date) {
+    if (typeof date !== "string") return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+
+    const parsedDate = new Date(date);
+
+    return (
+        !Number.isNaN(parsedDate.getTime()) &&
+        parsedDate.toISOString().slice(0, 10) === date
+    );
+}
+
+// Validate expense input
+function isValidExpense(amount, category, date, note) {
+    return (
+        typeof amount === "number" &&
+        Number.isFinite(amount) &&
+        amount > 0 &&
+        typeof category === "string" &&
+        category.trim().length > 0 &&
+        category.trim().length <= 50 &&
+        isValidDate(date) &&
+        (note === undefined || note === null ||
+            (typeof note === "string" && note.length <= 500))
+    );
+}
 
 // GET: Fetch logged-in user's expenses
 router.get("/", async (req, res) => {
@@ -24,17 +52,71 @@ router.get("/", async (req, res) => {
     }
 });
 
+// GET: Monthly expense summary
+router.get("/summary", async (req, res) => {
+    try {
+        const { month } = req.query;
+
+        if (
+            typeof month !== "string" ||
+            !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)
+        ) {
+            return res.status(400).json({
+                message: "Please provide month in YYYY-MM format"
+            });
+        }
+
+        const startDate = `${month}-01`;
+
+        const [totalResult, categoryResult] = await Promise.all([
+            pool.query(
+                `SELECT
+                    COUNT(*) AS total_expenses,
+                    COALESCE(SUM(amount), 0) AS total_amount
+                 FROM expenses
+                 WHERE user_id = $1
+                 AND expense_date >= $2::date
+                 AND expense_date < ($2::date + INTERVAL '1 month')`,
+                [req.user.userId, startDate]
+            ),
+
+            pool.query(
+                `SELECT
+                    category,
+                    SUM(amount) AS total_amount,
+                    COUNT(*) AS expense_count
+                 FROM expenses
+                 WHERE user_id = $1
+                 AND expense_date >= $2::date
+                 AND expense_date < ($2::date + INTERVAL '1 month')
+                 GROUP BY category
+                 ORDER BY SUM(amount) DESC`,
+                [req.user.userId, startDate]
+            )
+        ]);
+
+        res.json({
+            month,
+            totalExpenses: Number(totalResult.rows[0].total_expenses),
+            totalAmount: Number(totalResult.rows[0].total_amount),
+            categoryBreakdown: categoryResult.rows.map((row) => ({
+                category: row.category,
+                totalAmount: Number(row.total_amount),
+                expenseCount: Number(row.expense_count)
+            }))
+        });
+    } catch (error) {
+        console.error("Error generating summary:", error.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 // POST: Add a new expense
 router.post("/", async (req, res) => {
     try {
         const { amount, category, expense_date, note } = req.body;
 
-        if (
-            !Number.isFinite(Number(amount)) ||
-            Number(amount) <= 0 ||
-            !category?.trim() ||
-            !expense_date
-        ) {
+        if (!isValidExpense(amount, category, expense_date, note)) {
             return res.status(400).json({
                 message: "Please provide valid expense details"
             });
@@ -45,7 +127,13 @@ router.post("/", async (req, res) => {
              (user_id, amount, category, expense_date, note)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
-            [req.user.userId, amount, category.trim(), expense_date, note]
+            [
+                req.user.userId,
+                amount,
+                category.trim(),
+                expense_date,
+                note ?? null
+            ]
         );
 
         res.status(201).json(result.rows[0]);
@@ -62,12 +150,9 @@ router.put("/:id", async (req, res) => {
         const { amount, category, expense_date, note } = req.body;
 
         if (
-            !Number.isInteger(Number(id)) ||
+            !Number.isSafeInteger(Number(id)) ||
             Number(id) <= 0 ||
-            !Number.isFinite(Number(amount)) ||
-            Number(amount) <= 0 ||
-            !category?.trim() ||
-            !expense_date
+            !isValidExpense(amount, category, expense_date, note)
         ) {
             return res.status(400).json({
                 message: "Please provide valid expense details"
@@ -86,7 +171,7 @@ router.put("/:id", async (req, res) => {
                 amount,
                 category.trim(),
                 expense_date,
-                note,
+                note ?? null,
                 id,
                 req.user.userId
             ]
@@ -110,7 +195,7 @@ router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
 
-        if (!Number.isInteger(Number(id)) || Number(id) <= 0) {
+        if (!Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
             return res.status(400).json({
                 message: "Please provide a valid expense ID"
             });
