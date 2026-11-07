@@ -1,14 +1,20 @@
-
 const express = require("express");
 const pool = require("../db");
+const authenticateToken = require("../middleware/auth");
 
 const router = express.Router();
 
-// GET: Fetch all expenses
+// Protect all expense routes
+router.use(authenticateToken);
+
+// GET: Fetch logged-in user's expenses
 router.get("/", async (req, res) => {
     try {
         const result = await pool.query(
-            "SELECT * FROM expenses ORDER BY expense_date DESC"
+            `SELECT * FROM expenses
+             WHERE user_id = $1
+             ORDER BY expense_date DESC`,
+            [req.user.userId]
         );
 
         res.json(result.rows);
@@ -35,10 +41,11 @@ router.post("/", async (req, res) => {
         }
 
         const result = await pool.query(
-            `INSERT INTO expenses (amount, category, expense_date, note)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO expenses
+             (user_id, amount, category, expense_date, note)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
-            [amount, category, expense_date, note]
+            [req.user.userId, amount, category.trim(), expense_date, note]
         );
 
         res.status(201).json(result.rows[0]);
@@ -48,7 +55,7 @@ router.post("/", async (req, res) => {
     }
 });
 
-// PUT: Update an existing expense
+// PUT: Update user's own expense
 router.put("/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -73,9 +80,16 @@ router.put("/:id", async (req, res) => {
                  category = $2,
                  expense_date = $3,
                  note = $4
-             WHERE id = $5
+             WHERE id = $5 AND user_id = $6
              RETURNING *`,
-            [amount, category, expense_date, note, id]
+            [
+                amount,
+                category.trim(),
+                expense_date,
+                note,
+                id,
+                req.user.userId
+            ]
         );
 
         if (result.rows.length === 0) {
@@ -91,7 +105,7 @@ router.put("/:id", async (req, res) => {
     }
 });
 
-// DELETE: Delete an existing expense
+// DELETE: Delete user's own expense
 router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -103,8 +117,10 @@ router.delete("/:id", async (req, res) => {
         }
 
         const result = await pool.query(
-            "DELETE FROM expenses WHERE id = $1 RETURNING *",
-            [id]
+            `DELETE FROM expenses
+             WHERE id = $1 AND user_id = $2
+             RETURNING *`,
+            [id, req.user.userId]
         );
 
         if (result.rows.length === 0) {
