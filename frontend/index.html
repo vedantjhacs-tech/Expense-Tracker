@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">◈</span>
+                <h2>Expense<span>Tracker</span></h2>
+            </div>
+
+            <nav class="navigation">
+                <a href="#" class="nav-link active" id="navDashboard">▦ Dashboard</a>
+                <a href="#" class="nav-link" id="navAddExpense">＋ Add Expense</a>
+                <a href="#" class="nav-link" id="navTransactions">☷ Transactions</a>
+                <a href="#" class="nav-link" id="navAnalytics">▥ Analytics</a>
+                <a href="#" class="nav-link">⚙ Settings</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="profile">
+                    <div class="avatar">V</div>
+                    <div>
+                        <strong>Vedant Jha</strong>
+                        <small>Personal Account</small>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+
+            <!-- Dashboard Page -->
+            <div id="dashboardPage">
+                <header class="topbar">
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Welcome back! Here's your financial overview.</p>
+                    </div>
+                    <button class="add-button" id="openExpenseModal">＋ Add Expense</button>
+                </header>
+
+                <section class="summary-grid">
+                    <div class="summary-card">
+                        <span>Total Expenses</span>
+                        <h2 id="totalAmount">₹ 0.00</h2>
+                        <small>This month</small>
+                    </div>
+
+                    <div class="summary-card">
+                        <span>Total Transactions</span>
+                        <h2 id="totalCount">0</h2>
+                        <small>This month</small>
+                    </div>
+
+                    <div class="summary-card">
+                        <span>Average Expense</span>
+                        <h2 id="averageAmount">₹ 0.00</h2>
+                        <small>Per transaction</small>
+                    </div>
+                </section>
+
+                <section class="dashboard-grid">
+                    <div class="panel chart-panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h3>Spending Overview</h3>
+                                <p>Your monthly spending trend</p>
+                            </div>
+                            <select id="monthFilter">
+                                <option value="2026-11">November 2026</option>
+                                <option value="2026-10">October 2026</option>
+                            </select>
+                        </div>
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+
+                    <div class="panel category-panel">
+                        <h3>Categories</h3>
+                        <p>Your spending breakdown</p>
+                        <div id="categoryList">
+                            <p class="empty-state">No expenses to display yet.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel transactions-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>Recent Transactions</h3>
+                            <p>Your latest expenses</p>
+                        </div>
+                        <a href="#" class="view-all" id="viewAllTransactions">View all →</a>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Note</th>
+                                    <th>Amount</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTable">
+                                <tr>
+                                    <td colspan="5" class="empty-state">No transactions yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Transactions Page -->
+            <section id="transactionsPage" hidden>
+                <header class="topbar">
+                    <div>
+                        <h1>Transactions</h1>
+                        <p>Manage all your expenses in one place.</p>
+                    </div>
+                    <button class="add-button" id="transactionsAddButton">＋ Add Expense</button>
+                </header>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>All Transactions</h3>
+                            <p>Search and manage your expense records.</p>
+                        </div>
+                    </div>
+
+                    <div class="transaction-filters">
+                        <input type="text" id="transactionSearch" placeholder="Search category or note...">
+
+                        <select id="transactionCategoryFilter">
+                            <option value="all">All Categories</option>
+                            <option value="Food">Food</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Education">Education</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Health">Health</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Note</th>
+                                    <th>Amount</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allTransactionsTable">
+                                <tr>
+                                    <td colspan="5" class="empty-state">No transactions yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Page -->
+            <section id="analyticsPage" hidden>
+
+                <header class="topbar">
+                    <div>
+                        <h1>Analytics</h1>
+                        <p>Understand your spending habits and patterns.</p>
+                    </div>
+
+                    <select id="analyticsMonthFilter">
+                        <option value="2026-11">November 2026</option>
+                        <option value="2026-10">October 2026</option>
+                    </select>
+                </header>
+
+                <!-- Analytics Summary -->
+                <section class="summary-grid">
+                    <div class="summary-card">
+                        <span>Total Spending</span>
+                        <h2 id="analyticsTotal">₹ 0.00</h2>
+                        <small>Selected month</small>
+                    </div>
+
+                    <div class="summary-card">
+                        <span>Highest Category</span>
+                        <h2 id="analyticsHighest">—</h2>
+                        <small>By spending amount</small>
+                    </div>
+
+                    <div class="summary-card">
+                        <span>Largest Expense</span>
+                        <h2 id="analyticsLargest">₹ 0.00</h2>
+                        <small>Single transaction</small>
+                    </div>
+                </section>
+
+                <!-- Category Analytics -->
+                <section class="panel analytics-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>Category Breakdown</h3>
+                            <p>Where your money is going.</p>
+                        </div>
+                    </div>
+
+                    <div id="analyticsCategoryList">
+                        <p class="empty-state">No analytics available yet.</p>
+                    </div>
+                </section>
+
+                <!-- Monthly Insights -->
+                <section class="panel analytics-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>Spending Insights</h3>
+                            <p>Your monthly expense statistics.</p>
+                        </div>
+                    </div>
+
+                    <div class="summary-grid analytics-insights">
+                        <div class="summary-card">
+                            <span>Total Transactions</span>
+                            <h2 id="analyticsCount">0</h2>
+                        </div>
+
+                        <div class="summary-card">
+                            <span>Average Expense</span>
+                            <h2 id="analyticsAverage">₹ 0.00</h2>
+                        </div>
+
+                        <div class="summary-card">
+                            <span>Lowest Expense</span>
+                            <h2 id="analyticsSmallest">₹ 0.00</h2>
+                        </div>
+                    </div>
+                </section>
+
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Add/Edit Expense Modal -->
+    <div class="modal-overlay" id="expenseModal">
+        <div class="expense-modal">
+            <div class="modal-heading">
+                <div>
+                    <h2>Add New Expense</h2>
+                    <p>Enter your expense details below.</p>
+                </div>
+                <button class="close-modal" id="closeExpenseModal">×</button>
+            </div>
+
+            <form id="expenseForm">
+                <label for="expenseAmount">Amount (₹)</label>
+                <input type="number" id="expenseAmount" min="0.01" step="0.01" placeholder="Enter amount" required>
+
+                <label for="expenseCategory">Category</label>
+                <select id="expenseCategory" required>
+                    <option value="">Select category</option>
+                    <option>Food</option>
+                    <option>Travel</option>
+                    <option>Shopping</option>
+                    <option>Education</option>
+                    <option>Entertainment</option>
+                    <option>Bills</option>
+                    <option>Health</option>
+                    <option>Other</option>
+                </select>
+
+                <label for="expenseDate">Date</label>
+                <input type="date" id="expenseDate" required>
+
+                <label for="expenseNote">Note (Optional)</label>
+                <input type="text" id="expenseNote" maxlength="500" placeholder="What was this expense for?">
+
+                <div class="modal-actions">
+                    <button type="button" class="cancel-button" id="cancelExpense">Cancel</button>
+                    <button type="submit" class="add-button">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
